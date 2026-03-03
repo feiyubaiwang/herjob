@@ -453,16 +453,6 @@
             const btns = document.querySelectorAll('.option-btn');
             btns.forEach(b => b.style.pointerEvents = 'none');
 
-            // 添加点击反馈
-            if (btn) {
-                btn.style.backgroundColor = 'rgba(217, 52, 37, 0.2)';
-                btn.style.borderColor = '#D93425';
-                const indicator = btn.querySelector('span:last-child');
-                if (indicator) {
-                    indicator.style.backgroundColor = '#D93425';
-                }
-            }
-
             // 延迟进入下一题以体现点击反馈
             setTimeout(() => {
                 currentQuestion++;
