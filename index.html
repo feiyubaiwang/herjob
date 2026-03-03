@@ -127,23 +127,23 @@
 
             <!-- 选项 (1-5分) -->
             <div class="flex flex-col space-y-3 max-w-md mx-auto">
-                <button onclick="answerQuestion(5)" class="option-btn score-5 w-full py-4 px-6 rounded text-left text-zinc-200 flex justify-between items-center group">
+                <button onclick="answerQuestion(5, this)" class="option-btn score-5 w-full py-4 px-6 rounded text-left text-zinc-200 flex justify-between items-center group">
                     <span>非常同意</span>
                     <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-primary transition-colors"></span>
                 </button>
-                <button onclick="answerQuestion(4)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-300 flex justify-between items-center group">
+                <button onclick="answerQuestion(4, this)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-300 flex justify-between items-center group">
                     <span>比较同意</span>
                     <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-400 transition-colors"></span>
                 </button>
-                <button onclick="answerQuestion(3)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
+                <button onclick="answerQuestion(3, this)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
                     <span>中立 / 不确定</span>
                     <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
                 </button>
-                <button onclick="answerQuestion(2)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
+                <button onclick="answerQuestion(2, this)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
                     <span>比较不同意</span>
                     <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
                 </button>
-                <button onclick="answerQuestion(1)" class="option-btn score-1 w-full py-4 px-6 rounded text-left text-zinc-500 flex justify-between items-center group">
+                <button onclick="answerQuestion(1, this)" class="option-btn score-1 w-full py-4 px-6 rounded text-left text-zinc-500 flex justify-between items-center group">
                     <span>完全不同意</span>
                     <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-600 transition-colors"></span>
                 </button>
@@ -431,6 +431,9 @@
                 // 重置指针事件
                 b.style.pointerEvents = 'auto';
                 
+                // 重置focus状态
+                b.blur();
+                
                 // 重置按钮内部的圆形指示器
                 const indicator = b.querySelector('span:last-child');
                 if (indicator) {
@@ -441,7 +444,7 @@
             });
         }
 
-        function answerQuestion(score) {
+        function answerQuestion(score, btn) {
             // 记录分数
             const type = questions[currentQuestion].type;
             scores[type] += score;
@@ -449,6 +452,16 @@
             // 禁用按钮防连点
             const btns = document.querySelectorAll('.option-btn');
             btns.forEach(b => b.style.pointerEvents = 'none');
+
+            // 添加点击反馈
+            if (btn) {
+                btn.style.backgroundColor = 'rgba(217, 52, 37, 0.2)';
+                btn.style.borderColor = '#D93425';
+                const indicator = btn.querySelector('span:last-child');
+                if (indicator) {
+                    indicator.style.backgroundColor = '#D93425';
+                }
+            }
 
             // 延迟进入下一题以体现点击反馈
             setTimeout(() => {
