@@ -449,9 +449,21 @@
                     </button>
                 `;
                 
+                // 隐藏容器
+                optionsContainer.style.display = 'none';
+                
+                // 触发浏览器重排
+                void optionsContainer.offsetWidth;
+                
                 // 清空容器并重新添加选项按钮
                 optionsContainer.innerHTML = '';
                 optionsContainer.innerHTML = originalOptionsHTML;
+                
+                // 显示容器
+                optionsContainer.style.display = 'flex';
+                
+                // 触发浏览器重排
+                void optionsContainer.offsetWidth;
             }
         }
 
