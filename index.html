@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你的电影职业人格</title>
+    <!-- 引入 Tailwind CSS 进行高级 UI 构建 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Chart.js 用于绘制雷达图 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 Google Fonts: Noto Serif SC (思源宋体) 增加文艺感和高级感 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        // 配置 Tailwind 主题色和字体
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#D93425', // 用户指定的主题色
+                        darkbg: '#0a0a0a',
+                        surface: '#171717',
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', 'serif'],
+                        sans: ['system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #e5e5e5;
+            font-family: 'system-ui', sans-serif;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, .font-serif {
+            font-family: '"Noto Serif SC"', serif;
+        }
+        /* 平滑过渡动画 */
+        .fade-enter {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .hidden-screen {
+            display: none !important;
+        }
+        /* 自定义单选按钮样式 */
+        .option-btn {
+            transition: all 0.3s ease;
+            border: 1px solid #333;
+        }
+        .option-btn:hover {
+            border-color: #D93425;
+            background-color: rgba(217, 52, 37, 0.1);
+        }
+        /* 选项颜色渐变提示 (1-5分) */
+        .score-1:hover { border-color: #4b5563; background: rgba(75, 85, 99, 0.1); }
+        .score-5:hover { border-color: #D93425; background: rgba(217, 52, 37, 0.15); box-shadow: 0 0 10px rgba(217,52,37,0.3); }
+        
+        /* 电影卡片悬浮效果 */
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(217, 52, 37, 0.1);
+            border-color: rgba(217, 52, 37, 0.5);
+        }
+        
+        /* 加载动画 */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #333;
+            border-bottom-color: #D93425;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-center items-center p-4 selection:bg-primary selection:text-white">
+
+    <!-- 容器 -->
+    <main class="w-full max-w-2xl relative">
+        
+        <!-- ================= 屏幕 1：欢迎页 ================= -->
+        <section id="screen-start" class="fade-enter fade-enter-active text-center py-12">
+            <div class="mb-8 inline-block">
+                <h1 class="text-4xl md:text-5xl font-serif font-bold text-white tracking-widest mb-4">你是哪位职业女性？</h1>
+                <p class="text-zinc-400 font-serif text-lg tracking-wide">你的职业性格，决定了你的人生剧本。</p>
+            </div>
+            <div class="space-y-6 text-zinc-400 text-sm md:text-base leading-relaxed max-w-lg mx-auto mb-12">
+                <p>回答30道题，我会为你生成一份职业性格分析报告。</p>
+            </div>
+            <button onclick="startTest()" class="group relative px-8 py-3 bg-transparent text-primary font-serif font-semibold tracking-wider uppercase overflow-hidden border border-primary hover:bg-primary hover:text-white transition-all duration-500 shadow-[0_0_15px_rgba(217,52,37,0.2)] hover:shadow-[0_0_25px_rgba(217,52,37,0.5)]">
+                开始探索
+            </button>
+        </section>
+
+        <!-- ================= 屏幕 2：测试答题页 ================= -->
+        <section id="screen-quiz" class="hidden-screen fade-enter">
+            <!-- 进度条 -->
+            <div class="w-full h-1 bg-zinc-800 rounded-full mb-8 overflow-hidden">
+                <div id="progress-bar" class="h-full bg-primary transition-all duration-300 w-0"></div>
+            </div>
+            
+            <div class="text-center mb-10">
+                <span class="text-primary font-serif font-bold text-xl block mb-2" id="question-number">01 / 30</span>
+                <h2 class="text-2xl md:text-3xl font-serif text-white leading-relaxed min-h-[5rem] flex items-center justify-center" id="question-text">
+                    <!-- 问题文本 -->
+                </h2>
+            </div>
+
+            <!-- 选项 (1-5分) -->
+            <div class="flex flex-col space-y-3 max-w-md mx-auto">
+                <button onclick="answerQuestion(5)" class="option-btn score-5 w-full py-4 px-6 rounded text-left text-zinc-200 flex justify-between items-center group">
+                    <span>非常同意</span>
+                    <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-primary transition-colors"></span>
+                </button>
+                <button onclick="answerQuestion(4)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-300 flex justify-between items-center group">
+                    <span>比较同意</span>
+                    <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-400 transition-colors"></span>
+                </button>
+                <button onclick="answerQuestion(3)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
+                    <span>中立 / 不确定</span>
+                    <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
+                </button>
+                <button onclick="answerQuestion(2)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
+                    <span>比较不同意</span>
+                    <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
+                </button>
+                <button onclick="answerQuestion(1)" class="option-btn score-1 w-full py-4 px-6 rounded text-left text-zinc-500 flex justify-between items-center group">
+                    <span>完全不同意</span>
+                    <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-600 transition-colors"></span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 屏幕 3：加载计算页 ================= -->
+        <section id="screen-loading" class="hidden-screen fade-enter text-center py-20">
+            <span class="loader mb-8"></span>
+            <h2 class="text-2xl font-serif text-white tracking-widest mb-2">正在分析你的特质</h2>
+            <p class="text-zinc-500 text-sm">正在生成雷达图与职业分析报告...</p>
+        </section>
+
+        <!-- ================= 屏幕 4：结果页 ================= -->
+        <section id="screen-result" class="hidden-screen fade-enter pb-16">
+            <!-- 标题区域 -->
+            <div class="text-center mb-10">
+                <p class="text-primary text-sm tracking-[0.3em] uppercase mb-2">你的主导职业类型</p>
+                <h1 id="result-title" class="text-4xl md:text-5xl font-serif font-bold text-white mb-4">
+                    <!-- 原型名称 -->
+                </h1>
+                <p id="result-subtitle" class="text-xl text-zinc-400 font-serif italic">
+                    <!-- 原型副标题 -->
+                </p>
+            </div>
+
+            <!-- 雷达图 -->
+            <div class="relative w-full max-w-md mx-auto mb-12 bg-surface p-6 rounded-2xl border border-zinc-800 shadow-2xl">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <!-- 深度分析报告 -->
+            <div class="bg-surface border border-zinc-800 rounded-xl p-6 md:p-8 mb-12 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+                <h3 class="text-2xl font-serif text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    深度职业分析
+                </h3>
+                <div id="result-analysis" class="text-zinc-300 leading-relaxed space-y-4 text-justify">
+                    <!-- 报告内容 -->
+                </div>
+            </div>
+
+            <!-- 电影人物投射 -->
+            <div id="movie-character-section">
+                <!-- 电影人物注入区 -->
+            </div>
+
+            <div class="text-center mt-12">
+                <button onclick="restartTest()" class="text-zinc-500 hover:text-white underline decoration-zinc-700 hover:decoration-primary underline-offset-4 transition-colors">
+                    重新探索
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // ================= 核心数据配置 =================
+        // 霍兰德 RIASEC: 30题交叉排列
+        const questions = [
+            { text: "我喜欢亲自动手修理损坏的家电或组装复杂的物件。", type: "R" },
+            { text: "我对宇宙起源、人工智能或复杂的科学理论充满好奇。", type: "I" },
+            { text: "我的脑海里经常会冒出天马行空、不切实际的创意或灵感。", type: "A" },
+            { text: "当朋友遇到心理低谷时，我总是那个耐心的倾听者和开导者。", type: "S" },
+            { text: "在团队合作中，我习惯于主动站出来分配任务并掌控全局。", type: "E" },
+            { text: "我喜欢将杂乱无章的文件、数据或日常计划整理得井井有条。", type: "C" },
+            { text: "比起坐在办公室开会，我更喜欢在户外或操作台上进行实操性工作。", type: "R" },
+            { text: "面对一个复杂难题时，我会兴奋地寻找背后的逻辑和规律。", type: "I" },
+            { text: "我极度厌恶枯燥重复的日常，需要通过写作、绘画或音乐来表达自我。", type: "A" },
+            { text: "我深信帮助弱势群体或参与教育、公益事业，能带来最大的满足感。", type: "S" },
+            { text: "我享受说服他人接受我的观点，并渴望在商业或社会上取得成就。", type: "E" },
+            { text: "我认为遵守既定的规则和流程是保证事情顺利运转的唯一方式。", type: "C" },
+            { text: "我对各种工具、机械设备的运作原理感到着迷。", type: "R" },
+            { text: "我喜欢花大量时间阅读专业书籍、研究数据报告或探索未知领域。", type: "I" },
+            { text: "我非常重视生活中的美感，比如电影的构图、产品的设计或环境的氛围。", type: "A" },
+            { text: "相比于和机器打交道，我更喜欢和形形色色的人交流、合作。", type: "S" },
+            { text: "面对挑战时，我敢于承担风险，并追求利益或影响力的最大化。", type: "E" },
+            { text: "我处理财务数据、账单或核对细节时，总是极其严谨且极少出错。", type: "C" },
+            { text: "如果可能，我愿意成为一名精湛的手工艺人或工程师。", type: "R" },
+            { text: "在遇到争议时，我只相信客观的数据和严密的科学论证，而非感性诉求。", type: "I" },
+            { text: "我更喜欢弹性、自由的工作环境，而不是朝九晚五的死板打卡。", type: "A" },
+            { text: "我能敏锐地察觉到团队中其他人的情绪变化并及时给予支持。", type: "S" },
+            { text: "我对创业、投资或者建立自己的品牌拥有浓厚的兴趣。", type: "E" },
+            { text: "在开始一项工作前，我习惯制定详细的步骤清单并严格执行。", type: "C" },
+            { text: "我喜欢参与体育运动、远足或其他需要耗费体力的现实活动。", type: "R" },
+            { text: "我经常质疑现有的结论，试图寻找更深层次的真相或更优的算法。", type: "I" },
+            { text: "我的穿着打扮或做事风格，通常带有一种强烈的个人色彩和独特性。", type: "A" },
+            { text: "我觉得调解人际纠纷、让团队恢复和谐，是一件很有成就感的事。", type: "S" },
+            { text: "在公共场合发表演讲或向客户推销方案，并不会让我感到特别恐惧。", type: "E" },
+            { text: "对于任何合同、条款或重要文件，我都会逐字逐句地检查以避免漏洞。", type: "C" }
+        ];
+
+        // 12大类型的结果报告与代表人物 (基于前两项最高分权重计算)
+        const resultProfiles = [
+            {
+                primary: "I", secondary: "R",
+                title: "真理极客", subtitle: "深度探索与实干先锋",
+                analysis: "<p>在你的精神内核中，极度理性的探索欲与脚踏实地的执行力达成了完美的平衡。作为“研究型”与“现实型”的结合体，你不仅是一个在脑海中构建宏大理论的思想者，更是一个乐于挽起袖子、在物理世界中亲手验证真理的实干家。你对含糊其辞的抽象概念和复杂内耗的人际政治毫无兴趣，唯有精准的数据、无懈可击的逻辑以及完美运行的机械或代码，才能让你感受到真正的掌控感与美感。</p><p>你最契合的职业方向是<b>硬核工程师、算法架构师、硬件开发者、航空航天专家或科研学者</b>。在这些领域，你可以将你对系统底层规律的好奇心转化为实实在在的产出。你习惯于在孤独中深度钻研，面对极其复杂的工程或科学难题时，常人感到的是挫败，而你感受到的则是解谜的极致狂喜。你的职业壁垒极高，这源于你无可替代的硬核技术与专注力。</p>",
+                character: {
+                    quote: "在太空竞赛中，我就是那个负责计算轨道，并把人类安全带回来的大脑。",
+                    name: "凯瑟琳·约翰逊",
+                    movie: "隐藏人物",
+                    desc: "在那个充满偏见与限制的时代，她凭借无可辩驳的数学天赋和硬核的计算能力，打破了天花板。对她而言，真理和物理法则不分性别，只要掌握了核心技术，就能掌握改变世界的话语权。"
+                }
+            },
+            {
+                primary: "C", secondary: "I",
+                title: "数据精算师", subtitle: "秩序守护与逻辑解析",
+                analysis: "<p>你是这个喧嚣且充满不确定性世界里的“秩序锚点”。“常规型”赋予了你对细节的极致把控和对规则的敬畏，而“研究型”则为你注入了深邃的洞察力与逻辑分析能力。这两者的结合，让你具备了在极其庞杂、甚至令人窒息的海量信息中抽丝剥茧的能力。你不会被表面的狂热或群体的盲从所裹挟，你只相信经过反复验证的数据和严密的推演，你能敏锐地察觉到那些隐藏在枯燥报表背后的真实规律与潜在危机。</p><p>你最契合的职业方向是<b>高级数据分析专家、精算师、财务审计、风控总监或系统安全顾问</b>。在这些岗位上，你那种不被情绪左右的冷峻气质将成为组织最坚实的护城河。你的核心价值在于为庞大的企业机器提供绝对客观、精准的决策支撑。虽然你可能并不喜欢在台前高谈阔论，但当狂热褪去、潮水退去时，所有人才会惊觉，你基于数字做出的冷酷预判是多么的准确与致命。</p>",
+                character: {
+                    quote: "长官，我就是那个找到目标位置的人。请相信我的数据推演。",
+                    name: "玛雅",
+                    movie: "猎杀本·拉登",
+                    desc: "极度冷静、偏执且目标导向的分析专家。在长达十年的时间里，她在海量枯燥的情报和无数次失败中抽丝剥茧，不带任何感情色彩地拼凑出真相的拼图。她不仅是旁观者，更是用数据定下生死的判官。"
+                }
+            },
+            {
+                primary: "A", secondary: "I",
+                title: "先锋创作者", subtitle: "灵感迸发与深度哲思",
+                analysis: "<p>你是一个极具智力深度与反叛精神的“造梦者”。在你的性格矩阵中，“艺术型”让你拥有打破常规的强烈表达欲和对美学的极致追求，而“研究型”则让你本能地拒绝浅薄的感官刺激，转而追求作品背后的哲学意味、社会隐喻和严密逻辑。你不满足于仅仅制造一种好看的视觉现象，你渴望在你的创作中构建一整套属于你自己的世界观、价值观甚至全新的宇宙运转法则。</p><p>你最契合的职业方向是<b>独立导演、概念设计师、深度内容创作者、游戏世界观架构师或前沿产品设计师</b>。在你的手中，艺术不再是无病呻吟的情绪宣泄，而是极其锋利的手术刀，用来解剖人性和社会的复杂肌理。你常常游走在感性与理性的边缘，用极具逻辑的方式将内心的疯狂与灵感具象化。你的作品往往带有强烈的思想实验色彩，能够在不知不觉中颠覆受众的认知，让他们踏入你精心设计的思想迷宫。</p>",
+                character: {
+                    quote: "语言是文明的第一件武器。当你改变了沟通的维度，你就重塑了时间。",
+                    name: "露易丝·班克斯",
+                    movie: "降临",
+                    desc: "作为顶尖的语言学家，她用极其严密的逻辑去解析外星文明的艺术符号。她游走在感性的沟通与理性的解密之间，通过破译未知的语言，最终完成了一场改变人类认知维度的思想实验。"
+                }
+            },
+            {
+                primary: "R", secondary: "A",
+                title: "精密匠人", subtitle: "物理触感与极致美学",
+                analysis: "<p>你是一个深笃“知行合一”的信徒，坚信唯有双手触及的物理实体才具备最真实的重量。“现实型”让你具备了极佳的肢体协调性、忍耐力与对工具的精准掌控，而“艺术型”则赋予了你对材质、光影和极简美学的固执追求。你不是那种只会高谈阔论的空想家，你擅长将脑海中稍纵即逝的虚无灵感，通过千百次的枯燥打磨、极其精密的机械操作或手工雕琢，转化为现实世界中令人惊叹的实体造物。</p><p>你最契合的职业方向是<b>顶级手艺人、工业设计师、外科医生、建筑模型师、摄影指导或高级定制匠人</b>。对你而言，将一件事情重复千万遍直至化境，本身就是最高级的艺术表达。在工业流水线泛滥的时代，你身上那种近乎偏执的工匠精神显得尤为珍贵。你能够忍受漫长的寂寞，在与木材、金属、光影或人体的物理对抗中，你创造了无法被机器轻易复制和替代的孤品价值与极致美感。</p>",
+                character: {
+                    quote: "我不迎合潮流，我就是潮流本身。",
+                    name: "可可·香奈儿",
+                    movie: "时尚先锋香奈儿",
+                    desc: "从底层一路杀出的剪裁大师。她厌恶当时繁复虚荣的社会风气，用一把剪刀和对面料的极致掌控，在缝纫机前一针一线地创造了极简主义的美学革命。她的艺术不是画在纸上，而是穿在身上。"
+                }
+            },
+            {
+                primary: "S", secondary: "A",
+                title: "灵魂治愈师", subtitle: "心灵共振与温柔表达",
+                analysis: "<p>你拥有一副极其柔软且敏锐的灵魂触角，以及令人深感震撼的共情力。“社会型”让你天然地渴望与他人建立深度的连接，并在助人中寻找生命的意义；而“艺术型”则让你能摆脱冰冷刻板的说教，以极其细腻、极具感染力甚至充满诗意的方式去触达人心。你能轻易地感知到他人试图隐藏的痛苦与情绪涟漪，并懂得如何用温柔但直击灵魂的力量，去化解那些不可言说的心理创伤与成长阵痛。</p><p>你最契合的职业方向是<b>心理咨询师、艺术疗愈专家、情感专栏作家、特教老师或人力资源成长导师</b>。在别人眼中，那些充满刺与防备的“麻烦制造者”，在你眼中却是一个个急需被理解和接纳的破碎灵魂。真正的治愈从来不仅仅依靠冷冰冰的专业术语，更依赖于坦诚相见的灵魂碰撞。你通过极高的同理心与充满艺术感的沟通，撕开别人内心的层层防御，引导他们在精神的废墟中重新确立自我的坐标。</p>",
+                character: {
+                    quote: "对于哪怕最微小的幸福，我都愿意倾尽所有的奇思妙想去成全。",
+                    name: "艾米丽·普兰",
+                    movie: "天使爱美丽",
+                    desc: "在这个冷漠的现代都市里，她像一个孤独但温暖的精灵。她用一种充满艺术感、近乎童话般的细腻心思，去悄悄修补身边每一个普通人内心的遗憾与创伤，治愈他人的同时，也治愈了自己。"
+                }
+            },
+            {
+                primary: "E", secondary: "S",
+                title: "魅力领袖", subtitle: "宏大愿景与人心凝聚",
+                analysis: "<p>你天生具有一种摄人心魄的磁场，极其擅长点燃人群的热情并掌控集体的意志。“企业型”赋予了你极强的现实野心、明确的目标感与对成功的渴望；而“社会型”则让你深刻洞悉人性的弱点与需求，懂得如何通过真诚的关怀与描绘愿景来赢得人心。你绝不是那种只会挥舞绩效大棒、依靠恐惧来驱动团队的冷酷监工，你是一位卓越的“造梦者”和精神领袖，能够让所有人甘愿为你描绘的蓝图冲锋陷阵。</p><p>你最契合的职业方向是<b>创业公司首席执行官、公共关系总监、非营利组织领袖、金牌销售或政界精英</b>。你拥有一种润物细无声却又极具穿透力的社会影响力。你能敏锐地发掘每一个追随者身上的闪光点与潜力，并通过极具煽动性的演讲与个人魅力，将这些原本散落的个体凝聚成一股足以改变行业格局的庞大洪流。在你的带领下，团队追求的不仅是利益，更是一种无可阻挡的信仰。</p>",
+                character: {
+                    quote: "不要用那些专业术语来糊弄我！我只在乎这些活生生的人到底遭遇了什么。",
+                    name: "埃琳·布罗克维奇",
+                    movie: "永不妥协",
+                    desc: "没有显赫的学历，却拥有惊人的共情力与战斗欲。面对庞大的企业巨头，她凭着一腔热血和无可挑剔的个人魅力，赢得了数百位受害者的信任。她将悲悯化为利剑，成为带领弱势群体冲锋陷阵的无畏领袖。"
+                }
+            },
+            {
+                primary: "E", secondary: "C",
+                title: "战略操盘手", subtitle: "权力意志与严密规则",
+                analysis: "<p>你是一个为了最终胜利可以做到极度克制与隐忍的人。“企业型”让你对世俗意义上的权力、地位与商业版图充满极大的渴望；但“常规型”的存在，让你彻底摒弃了鲁莽与情绪化，转而选择用严密的谋略、冰冷的规则和无懈可击的数据来排兵布阵。你深谙社会机器的残酷运转法则与利益分配机制，在复杂波谲的商业博弈和职场斗争中，你是那个喜怒不形于色、永远比对手多算三步的幕后执棋者。</p><p>你最契合的职业方向是<b>企业高级管理人员、战略投资合伙人、顶级商业顾问、法务总监或供应链操盘手</b>。在充满不确定性的危机面前，当别人陷入恐慌或狂热时，你能够瞬间屏蔽一切情感干扰，犹如一台精密计算的超级电脑，迅速厘清利弊，做出能够实现利益最大化的绝对理性选择。你擅长在混沌中建立新秩序，用坚不可摧的制度城墙保卫并不断扩张你的商业帝国。</p>",
+                character: {
+                    quote: "你以为是你自己选择了这件蓝色的毛衣，但事实上，是我们在这间屋子里为你做出的选择。",
+                    name: "米兰达·普雷斯丽",
+                    movie: "穿普拉达的女王",
+                    desc: "时尚帝国中拥有绝对统治力的独裁者。她极度冷酷、要求严苛，在看似光鲜亮丽的混乱产业中建立起铁一般的秩序标准。她的每一个微小决定，都经过严密的战略计算，并能引发整个行业的蝴蝶效应。"
+                }
+            },
+            {
+                primary: "R", secondary: "E",
+                title: "实干家", subtitle: "硬核行动与无畏征服",
+                analysis: "<p>你的人生信条是“用绝对的行动力粉碎一切阻碍”。“现实型”让你深深扎根于现实的土壤与物理世界，信奉力量与工具的直接作用；而“企业型”则为你注入了征服恶劣环境、挑战极限的强大驱动力与果决的领导气质。你极其厌恶纸上谈兵的冗长会议和无休止的理论推演，在你看来，所有的难题都不过是一个个等待被拆解和攻克的工程学或战术项目，只有干出结果才是唯一的真理。</p><p>你最契合的职业方向是<b>工程项目总指挥、实业领域创业者、极限探索队长、现场运营总监或危机应对专员</b>。你拥有常人难以企及的逆商，面对突如其来的绝境或崩溃的系统，你从不抱怨命运或陷入内耗，而是第一时间拿起工具、整合可用资源并组织队伍去暴力破局。极其强悍的动手执行力与乐观的求生欲，让你在任何恶劣或混乱的环境下，都能成为扭转乾坤、带领团队翻盘的定海神针。</p>",
+                character: {
+                    quote: "在这个见鬼的地方，如果你不按我的生存规程行动，所有人都会死。",
+                    name: "艾伦·雷普利",
+                    movie: "异形",
+                    desc: "在深空绝境与极度恐慌之中，她是唯一保持绝对理智的实干派。她不迷信权威，也不坐以待毙，凭借强悍的心理素质、对机械的熟练操作和果决的战术执行力，在物理层面上硬生生杀出了一条血路。"
+                }
+            },
+            {
+                primary: "C", secondary: "S",
+                title: "秩序基石", subtitle: "稳定基石与默默守护",
+                analysis: "<p>你是任何庞大组织和复杂系统中最为不可或缺的压舱石与守护神。“常规型”让你极度可靠、对细节有着近乎偏执的追求，并高度尊重既定的流程与规则；而“社会型”则让你剥离了机器般的冷漠，懂得用极其温和、包容的服务心态去默默支持和润滑身边的每一个个体。你从不追求在聚光灯下闪耀，但正因为有你建立的严密规则网络和无私的后勤支撑，整个系统才得以免于在狂热中解体或崩溃。</p><p>你最契合的职业方向是<b>高级行政管家、机构运营总监、人力资源后台主管、护士长或档案数据中心负责人</b>。你隐于热闹与喧嚣的背后，是理性的绝对守护者。你不仅为前方冲锋陷阵的团队提供了完美无瑕的后勤保障与制度梳理，更在精神层面默默支撑着整个组织的情感运转。你就像那些维系高楼大厦不倒的隐蔽钢筋，没有你对秩序和规则的默默坚守，再强大的力量也会迅速走向混乱与失控。</p>",
+                character: {
+                    quote: "你们负责在前面拯救世界，而我负责收拾残局，并确保明天公司还能正常运转。",
+                    name: "小辣椒 (波茨)",
+                    movie: "钢铁侠",
+                    desc: "天才与疯子背后的定海神针。在一个充满超级英雄与爆炸事件的混乱世界里，她用极其专业的行政手腕、细腻的心思和对规则的把控，默默支撑着庞大商业帝国的平稳运转。没有她的秩序，再耀眼的天才也会陨落。"
+                }
+            },
+            {
+                primary: "S", secondary: "I",
+                title: "启蒙导师", subtitle: "思想启蒙与真理传递",
+                analysis: "<p>你是一位终身致力于探寻真理并慷慨传递智慧的火炬手。“社会型”赋予了你强烈的社会责任感和对人类心智成长的无限热忱；而“研究型”则确保了你的热情绝非空洞的口号，而是建立在深邃的知识储备、严密的逻辑推演和独立思考的深度之上。你不满足于对他人进行简单的陪伴或肤浅的技能培训，你渴望的是“授人以渔”，是用思想的利刃去割裂愚昧，唤醒他人对世界和自我更深层次的觉醒。</p><p>你最契合的职业方向是<b>高校资深学者、智库核心专家、深度调查记者、教育体系改革者或行业精神导师</b>。你既拥有深厚的学术底蕴，又跳动着一颗炽热的育人之心。你致力于打破体制的陈规与思想的禁锢，用充满启发性甚至带有颠覆性的启蒙方式，引导后来的探索者们站上更高的视野，用全新的、辩证的视角去寻找属于他们自己的真理、自由与人生意义。</p>",
+                character: {
+                    quote: "你们来到这里，不是为了学习如何成为别人的妻子，而是为了学习如何成为你们自己。",
+                    name: "凯瑟琳·沃森",
+                    movie: "蒙娜丽莎的微笑",
+                    desc: "在思想极度保守的年代，她作为大学艺术史教授，没有选择照本宣科。她用深厚的学识与前卫的艺术鉴赏力，如同一把利刃，划破了封建礼教的幕布，唤醒了一群年轻女性对独立思考和自由人生的觉醒。"
+                }
+            },
+            {
+                primary: "A", secondary: "E",
+                title: "创意总监", subtitle: "天马行空与商业奇迹",
+                analysis: "<p>你是这个时代最稀缺的“贩卖奇迹的幻术师”。在你的灵魂中，“艺术型”赋予了你天马行空的极致想象力、敏锐的审美嗅觉和对潮流的预判；而“企业型”则让你彻底摒弃了那种孤芳自赏、穷困潦倒的刻板艺术家形象。你深谙商业的运作逻辑与大众的消费心理，你不仅能够创造出令人惊艳的艺术概念，更懂得如何将这些虚无缥缈的创意进行完美的包装，并成功兜售给全世界的受众。</p><p>你最契合的职业方向是<b>顶级创意总监、王牌影视制片人、爆款产品经理、广告营销大亨或品牌视觉主理人</b>。你游刃有余地穿梭在感性的艺术与理性的商业这两个截然不同的维度之间。你极其擅长制造惊人的视觉奇观和极具粘性的情绪价值，并能够通过极具煽动力的艺术表现形式，死死抓住大众的眼球。你拥有常人难以企及的宏大愿景，并具备将这些不切实际的梦想转化为庞大商业帝国的强悍手腕。</p>",
+                character: {
+                    quote: "我生来就注定要颠覆规则。在我的舞台上，平庸就是不可饶恕的犯罪。",
+                    name: "库伊拉",
+                    movie: "黑白魔女库伊拉",
+                    desc: "离经叛道的时尚狂女，将破坏力与创造力完美融合的商业奇才。她游刃有余地操纵着媒体、大众情绪和竞争对手，用极具视觉冲击力的艺术奇观和近乎疯狂的营销手腕，强行夺取了属于自己的女王宝座。"
+                }
+            },
+            {
+                primary: "I", secondary: "E",
+                title: "孤胆智者", subtitle: "绝对理性与智力碾压",
+                analysis: "<p>你拥有智力层面上的绝对自信与对未知世界极度膨胀的征服欲。“研究型”让你拥有犹如超级计算机般高速运转的大脑和对复杂信息的超强解析力；而“企业型”则让你在面对谜题和对手时，展现出极强的攻击性、掌控欲以及敢于挑战世俗权威的底气。你常常因为思维跳跃太快而显得有些傲慢或不合群，但这仅仅是因为你不愿在低效的沟通和繁文缛节上浪费丝毫脑力。</p><p>你最契合的职业方向是<b>顶尖刑侦解密专家、危机公关大师、顶级黑客防御专家、独角兽科技公司创始人或对冲基金经理</b>。你从不按常理出牌，极度反感平庸与平庸的规则。在这个由智商决定的战场上，你只享受那种通过碾压级别的智力推演、精准找到系统漏洞并瞬间掌控全局的极致快感。你不需要世俗的廉价理解，你只追寻拨开迷雾、触碰真相那一瞬间带来的灵魂颤栗与绝对统治感。</p>",
+                character: {
+                    quote: "没有什么系统是我无法攻破的，只要你在网络上留下过一丝痕迹，我就能查出你的底细。",
+                    name: "莉丝贝特·沙兰德",
+                    movie: "龙纹身的女孩",
+                    desc: "如同暗网中幽灵一般的顶尖黑客。她孤僻、尖锐、与世俗格格不入，但在面对极其复杂的迷局时，她那如超级计算机般的大脑会爆发出令人恐惧的解析力。她不需要世界的理解，只享受用智商碾压一切的快感。"
+                }
+            }
+        ];
+
+        // ================= 状态管理 =================
+        let currentQuestion = 0;
+        let scores = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+        let radarChartInstance = null;
+
+        // ================= DOM 元素 =================
+        const screenStart = document.getElementById('screen-start');
+        const screenQuiz = document.getElementById('screen-quiz');
+        const screenLoading = document.getElementById('screen-loading');
+        const screenResult = document.getElementById('screen-result');
+        
+        const qText = document.getElementById('question-text');
+        const qNum = document.getElementById('question-number');
+        const progressBar = document.getElementById('progress-bar');
+
+        // ================= 核心逻辑 =================
+        
+        function switchScreen(hideEl, showEl) {
+            hideEl.classList.remove('fade-enter-active');
+            setTimeout(() => {
+                hideEl.classList.add('hidden-screen');
+                showEl.classList.remove('hidden-screen');
+                // 触发 reflow 保证动画执行
+                void showEl.offsetWidth;
+                showEl.classList.add('fade-enter-active');
+            }, 500); // 配合 CSS transition 时间
+        }
+
+        function startTest() {
+            currentQuestion = 0;
+            scores = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+            renderQuestion();
+            
+            // 修复 Bug：重置选项按钮的状态，确保测试重新开始时可以点击
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => b.style.pointerEvents = 'auto');
+
+            switchScreen(screenStart, screenQuiz);
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQuestion];
+            qText.innerText = q.text;
+            qNum.innerText = `${String(currentQuestion + 1).padStart(2, '0')} / ${questions.length}`;
+            
+            // 更新进度条
+            const progress = ((currentQuestion) / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function answerQuestion(score) {
+            // 记录分数
+            const type = questions[currentQuestion].type;
+            scores[type] += score;
+            
+            // 禁用按钮防连点
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => b.style.pointerEvents = 'none');
+
+            // 延迟进入下一题以体现点击反馈
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    // 添加切题动画
+                    qText.style.opacity = 0;
+                    setTimeout(() => {
+                        renderQuestion();
+                        qText.style.opacity = 1;
+                        btns.forEach(b => b.style.pointerEvents = 'auto');
+                    }, 200);
+                } else {
+                    finishTest();
+                }
+            }, 300);
+        }
+
+        function finishTest() {
+            progressBar.style.width = '100%';
+            switchScreen(screenQuiz, screenLoading);
+            
+            // 模拟计算延迟，增强高级感
+            setTimeout(() => {
+                generateResults();
+                switchScreen(screenLoading, screenResult);
+                
+                // 修复 Bug：必须等待页面切换动画完成（500ms），容器 display 从 none 变成 block 后再渲染图表
+                // 否则 Chart.js 会由于 Canvas 父元素不可见，导致计算宽度为 0 从而引发渲染失败。
+                setTimeout(() => {
+                    renderChart();
+                }, 550);
+                
+            }, 2500);
+        }
+
+        function generateResults() {
+            // 计算 12 种原型的匹配得分 (主导维度权重 1.5，次要维度权重 1.0)
+            let maxProfile = null;
+            let maxScore = -1;
+            
+            resultProfiles.forEach(profile => {
+                let currentScore = (scores[profile.primary] * 1.5) + (scores[profile.secondary] * 1.0);
+                if (currentScore > maxScore) {
+                    maxScore = currentScore;
+                    maxProfile = profile;
+                }
+            });
+
+            // 渲染文本分析
+            document.getElementById('result-title').innerText = maxProfile.title;
+            document.getElementById('result-subtitle').innerText = maxProfile.subtitle;
+            document.getElementById('result-analysis').innerHTML = maxProfile.analysis;
+            
+            // 渲染电影人物卡片
+            const characterContainer = document.getElementById('movie-character-section');
+            characterContainer.innerHTML = `
+                <h3 class="text-2xl font-serif text-white mb-6 text-center">你的电影人格</h3>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 md:p-10 relative overflow-hidden group hover:border-primary transition-colors duration-500 shadow-2xl">
+                    <div class="absolute -right-6 -top-10 text-[10rem] text-zinc-800 opacity-20 font-serif group-hover:text-primary transition-colors duration-700 pointer-events-none leading-none">"</div>
+                    <div class="relative z-10">
+                        <p class="text-xl md:text-2xl text-primary font-serif italic mb-8 leading-relaxed">“${maxProfile.character.quote}”</p>
+                        <div class="mb-6 flex flex-wrap items-end gap-3">
+                            <h4 class="text-3xl font-serif text-white font-bold tracking-wide">${maxProfile.character.name}</h4>
+                            <span class="text-sm text-zinc-400 bg-black px-3 py-1 rounded-sm border border-zinc-800 tracking-widest uppercase mb-1">《${maxProfile.character.movie}》</span>
+                        </div>
+                        <div class="text-zinc-400 leading-relaxed text-justify space-y-2 text-base md:text-lg">
+                            <p>${maxProfile.character.desc}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderChart() {
+            try {
+                const canvas = document.getElementById('radarChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                
+                if (radarChartInstance) {
+                    radarChartInstance.destroy();
+                }
+
+                Chart.defaults.color = '#71717a'; // zinc-500
+                Chart.defaults.font.family = '"Noto Serif SC", serif';
+
+                radarChartInstance = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['现实型', '研究型', '艺术型', '社会型', '企业型', '常规型'],
+                        datasets: [{
+                            label: '特质强度',
+                            data: [scores.R, scores.I, scores.A, scores.S, scores.E, scores.C],
+                            backgroundColor: 'rgba(217, 52, 37, 0.2)', // primary transparent
+                            borderColor: '#D93425', // primary
+                            pointBackgroundColor: '#0a0a0a',
+                            pointBorderColor: '#D93425',
+                            pointHoverBackgroundColor: '#D93425',
+                            pointHoverBorderColor: '#fff',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                pointLabels: {
+                                    color: '#e5e5e5',
+                                    font: { size: 14, weight: 'bold' }
+                                },
+                                ticks: {
+                                    display: false, // 隐藏具体分数刻度，更显高级
+                                    min: 0,
+                                    max: 25 // 5题 * 5分 = 25分满分
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(23, 23, 23, 0.9)',
+                                titleColor: '#D93425',
+                                bodyColor: '#e5e5e5',
+                                borderColor: '#333',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `契合指数: ${context.raw} / 25`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.warn('图表渲染保护：', error);
+            }
+        }
+
+        function restartTest() {
+            switchScreen(screenResult, screenStart);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // 修复：确保回到首页时选项按钮的点击事件被正确还原
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => b.style.pointerEvents = 'auto');
+        }
+    </script>
+</body>
+</html>
