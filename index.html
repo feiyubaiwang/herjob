@@ -421,6 +421,15 @@
             // 更新进度条
             const progress = ((currentQuestion) / questions.length) * 100;
             progressBar.style.width = `${progress}%`;
+            
+            // 重置选项按钮的视觉状态
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => {
+                b.style.pointerEvents = 'auto';
+                b.style.backgroundColor = '';
+                b.style.borderColor = '';
+                b.style.boxShadow = '';
+            });
         }
 
         function answerQuestion(score) {
