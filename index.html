@@ -422,49 +422,52 @@
             const progress = ((currentQuestion) / questions.length) * 100;
             progressBar.style.width = `${progress}%`;
             
-            // 完全重新创建选项按钮，确保状态被完全重置
-            const optionsContainer = document.getElementById('options-container');
-            if (optionsContainer) {
-                // 保存原始的HTML内容
-                const originalOptionsHTML = `
-                    <button onclick="answerQuestion(5)" class="option-btn score-5 w-full py-4 px-6 rounded text-left text-zinc-200 flex justify-between items-center group">
-                        <span>非常同意</span>
-                        <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-primary transition-colors"></span>
-                    </button>
-                    <button onclick="answerQuestion(4)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-300 flex justify-between items-center group">
-                        <span>比较同意</span>
-                        <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-400 transition-colors"></span>
-                    </button>
-                    <button onclick="answerQuestion(3)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
-                        <span>中立 / 不确定</span>
-                        <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
-                    </button>
-                    <button onclick="answerQuestion(2)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
-                        <span>比较不同意</span>
-                        <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
-                    </button>
-                    <button onclick="answerQuestion(1)" class="option-btn score-1 w-full py-4 px-6 rounded text-left text-zinc-500 flex justify-between items-center group">
-                        <span>完全不同意</span>
-                        <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-600 transition-colors"></span>
-                    </button>
-                `;
-                
-                // 隐藏容器
-                optionsContainer.style.display = 'none';
-                
-                // 触发浏览器重排
-                void optionsContainer.offsetWidth;
-                
-                // 清空容器并重新添加选项按钮
-                optionsContainer.innerHTML = '';
-                optionsContainer.innerHTML = originalOptionsHTML;
-                
-                // 显示容器
-                optionsContainer.style.display = 'flex';
-                
-                // 触发浏览器重排
-                void optionsContainer.offsetWidth;
-            }
+            // 延迟渲染选项按钮，确保浏览器有足够的时间来重置所有状态
+            setTimeout(() => {
+                // 完全重新创建选项按钮，确保状态被完全重置
+                const optionsContainer = document.getElementById('options-container');
+                if (optionsContainer) {
+                    // 保存原始的HTML内容
+                    const originalOptionsHTML = `
+                        <button onclick="answerQuestion(5)" class="option-btn score-5 w-full py-4 px-6 rounded text-left text-zinc-200 flex justify-between items-center group">
+                            <span>非常同意</span>
+                            <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-primary transition-colors"></span>
+                        </button>
+                        <button onclick="answerQuestion(4)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-300 flex justify-between items-center group">
+                            <span>比较同意</span>
+                            <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-400 transition-colors"></span>
+                        </button>
+                        <button onclick="answerQuestion(3)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
+                            <span>中立 / 不确定</span>
+                            <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
+                        </button>
+                        <button onclick="answerQuestion(2)" class="option-btn w-full py-4 px-6 rounded text-left text-zinc-400 flex justify-between items-center group">
+                            <span>比较不同意</span>
+                            <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-500 transition-colors"></span>
+                        </button>
+                        <button onclick="answerQuestion(1)" class="option-btn score-1 w-full py-4 px-6 rounded text-left text-zinc-500 flex justify-between items-center group">
+                            <span>完全不同意</span>
+                            <span class="w-3 h-3 rounded-full bg-zinc-700 group-hover:bg-zinc-600 transition-colors"></span>
+                        </button>
+                    `;
+                    
+                    // 隐藏容器
+                    optionsContainer.style.display = 'none';
+                    
+                    // 触发浏览器重排
+                    void optionsContainer.offsetWidth;
+                    
+                    // 清空容器并重新添加选项按钮
+                    optionsContainer.innerHTML = '';
+                    optionsContainer.innerHTML = originalOptionsHTML;
+                    
+                    // 显示容器
+                    optionsContainer.style.display = 'flex';
+                    
+                    // 触发浏览器重排
+                    void optionsContainer.offsetWidth;
+                }
+            }, 50); // 50ms 延迟，确保浏览器有足够的时间来重置所有状态
         }
 
         function answerQuestion(score) {
