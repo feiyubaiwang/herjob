@@ -429,6 +429,13 @@
                 b.style.backgroundColor = '';
                 b.style.borderColor = '';
                 b.style.boxShadow = '';
+                b.style.outline = '';
+                b.style.color = '';
+                // 重置按钮内部的圆形指示器
+                const indicator = b.querySelector('span:last-child');
+                if (indicator) {
+                    indicator.style.backgroundColor = '';
+                }
             });
         }
 
@@ -450,7 +457,6 @@
                     setTimeout(() => {
                         renderQuestion();
                         qText.style.opacity = 1;
-                        btns.forEach(b => b.style.pointerEvents = 'auto');
                     }, 200);
                 } else {
                     finishTest();
