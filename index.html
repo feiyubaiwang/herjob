@@ -422,19 +422,21 @@
             const progress = ((currentQuestion) / questions.length) * 100;
             progressBar.style.width = `${progress}%`;
             
-            // 重置选项按钮的视觉状态
+            // 完全重置选项按钮的状态
             const btns = document.querySelectorAll('.option-btn');
-            btns.forEach(b => {
+            btns.forEach((b, index) => {
+                // 重置所有内联样式
+                b.removeAttribute('style');
+                
+                // 重置指针事件
                 b.style.pointerEvents = 'auto';
-                b.style.backgroundColor = '';
-                b.style.borderColor = '';
-                b.style.boxShadow = '';
-                b.style.outline = '';
-                b.style.color = '';
+                
                 // 重置按钮内部的圆形指示器
                 const indicator = b.querySelector('span:last-child');
                 if (indicator) {
-                    indicator.style.backgroundColor = '';
+                    indicator.removeAttribute('style');
+                    // 确保指示器的背景色重置为默认值
+                    indicator.style.backgroundColor = '#374151'; // bg-zinc-700 的颜色值
                 }
             });
         }
