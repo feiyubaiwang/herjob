@@ -7,7 +7,24 @@
     <!-- 引入 Tailwind CSS 进行高级 UI 构建 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Chart.js 用于绘制雷达图 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- 备用 CDN 源 -->
+    <script>
+        window.addEventListener('load', function() {
+            if (typeof Chart === 'undefined') {
+                console.warn('主 CDN 加载失败，尝试备用 CDN...');
+                var script = document.createElement('script');
+                script.src = 'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js';
+                script.onload = function() {
+                    console.log('备用 CDN 加载成功');
+                };
+                script.onerror = function() {
+                    console.error('所有 CDN 加载失败');
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
     <!-- 引入 Google Fonts: Noto Serif SC (思源宋体) 增加文艺感和高级感 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -539,7 +556,27 @@
                 // 修复 Bug：必须等待页面切换动画完成（500ms），容器 display 从 none 变成 block 后再渲染图表
                 // 否则 Chart.js 会由于 Canvas 父元素不可见，导致计算宽度为 0 从而引发渲染失败。
                 setTimeout(() => {
-                    renderChart();
+                    // 检查 Chart.js 是否已加载，如果没有则等待加载完成
+                    if (typeof Chart === 'undefined') {
+                        console.warn('Chart.js 尚未加载，等待加载完成...');
+                        // 最多等待 5 秒
+                        let attempts = 0;
+                        const maxAttempts = 50;
+                        const checkInterval = setInterval(() => {
+                            attempts++;
+                            if (typeof Chart !== 'undefined') {
+                                clearInterval(checkInterval);
+                                console.log('Chart.js 加载完成，开始渲染图表');
+                                renderChart();
+                            } else if (attempts >= maxAttempts) {
+                                clearInterval(checkInterval);
+                                console.error('Chart.js 加载超时');
+                                renderChart(); // 尝试渲染，会显示错误提示
+                            }
+                        }, 100);
+                    } else {
+                        renderChart();
+                    }
                 }, 550);
                 
             }, 2500);
@@ -584,10 +621,47 @@
         }
 
         function renderChart() {
+            // 检查 Chart.js 是否已加载
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js 未加载，尝试重新加载...');
+                // 显示加载失败提示
+                const canvas = document.getElementById('radarChart');
+                if (canvas) {
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-zinc-400 mb-4">图表加载失败，请刷新页面重试</p>
+                            <button onclick="location.reload()" class="px-4 py-2 bg-primary text-white rounded hover:bg-red-700 transition-colors">
+                                刷新页面
+                            </button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
             try {
                 const canvas = document.getElementById('radarChart');
-                if (!canvas) return;
+                if (!canvas) {
+                    console.warn('Canvas 元素未找到');
+                    return;
+                }
+                
+                // 设置 Canvas 尺寸
+                const container = canvas.parentElement;
+                const containerWidth = container.clientWidth;
+                const containerHeight = Math.min(containerWidth * 0.8, 300); // 限制最大高度
+                
+                canvas.width = containerWidth;
+                canvas.height = containerHeight;
+                canvas.style.width = containerWidth + 'px';
+                canvas.style.height = containerHeight + 'px';
+                
                 const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    console.warn('无法获取 Canvas 上下文');
+                    return;
+                }
                 
                 if (radarChartInstance) {
                     radarChartInstance.destroy();
@@ -616,13 +690,14 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         scales: {
                             r: {
                                 angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                                 grid: { color: 'rgba(255, 255, 255, 0.1)' },
                                 pointLabels: {
                                     color: '#e5e5e5',
-                                    font: { size: 14, weight: 'bold' }
+                                    font: { size: 12, weight: 'bold' }
                                 },
                                 ticks: {
                                     display: false, // 隐藏具体分数刻度，更显高级
@@ -650,8 +725,21 @@
                         }
                     }
                 });
+                
+                console.log('雷达图渲染成功');
             } catch (error) {
-                console.warn('图表渲染保护：', error);
+                console.error('图表渲染失败：', error);
+                // 显示错误提示
+                const canvas = document.getElementById('radarChart');
+                if (canvas) {
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-zinc-400 mb-4">图表渲染失败</p>
+                            <p class="text-zinc-500 text-sm">${error.message}</p>
+                        </div>
+                    `;
+                }
             }
         }
 
