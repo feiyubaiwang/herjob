@@ -574,18 +574,6 @@
                 generateResults();
                 switchScreen(screenLoading, screenResult);
                 
-                // 立即显示图表加载状态
-                const canvas = document.getElementById('radarChart');
-                if (canvas) {
-                    const container = canvas.parentElement;
-                    container.innerHTML = `
-                        <div class="text-center py-8">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-                            <p class="text-zinc-400">图表加载中...</p>
-                        </div>
-                    `;
-                }
-                
                 // 修复 Bug：必须等待页面切换动画完成（500ms），容器 display 从 none 变成 block 后再渲染图表
                 // 否则 Chart.js 会由于 Canvas 父元素不可见，导致计算宽度为 0 从而引发渲染失败。
                 setTimeout(() => {
@@ -654,28 +642,30 @@
         }
 
         function renderChart() {
+            // 首先获取容器元素
+            const container = document.querySelector('.relative.w-full.max-w-md.mx-auto.mb-12.bg-surface.p-6.rounded-2xl.border.border-zinc-800.shadow-2xl');
+            if (!container) {
+                console.warn('图表容器未找到');
+                return;
+            }
+            
             // 检查 Chart.js 是否已加载
             if (typeof Chart === 'undefined') {
                 console.warn('Chart.js 未加载，尝试重新加载...');
                 // 显示加载失败提示
-                const canvas = document.getElementById('radarChart');
-                if (canvas) {
-                    const container = canvas.parentElement;
-                    container.innerHTML = `
-                        <div class="text-center py-8">
-                            <p class="text-zinc-400 mb-4">图表加载失败，请刷新页面重试</p>
-                            <button onclick="location.reload()" class="px-4 py-2 bg-primary text-white rounded hover:bg-red-700 transition-colors">
-                                刷新页面
-                            </button>
-                        </div>
-                    `;
-                }
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-zinc-400 mb-4">图表加载失败，请刷新页面重试</p>
+                        <button onclick="location.reload()" class="px-4 py-2 bg-primary text-white rounded hover:bg-red-700 transition-colors">
+                            刷新页面
+                        </button>
+                    </div>
+                `;
                 return;
             }
             
             try {
                 // 重新创建 Canvas 元素，确保干净的渲染环境
-                const container = document.getElementById('radarChart').parentElement;
                 container.innerHTML = '<canvas id="radarChart"></canvas>';
                 
                 const canvas = document.getElementById('radarChart');
@@ -779,16 +769,12 @@
             } catch (error) {
                 console.error('图表渲染失败：', error);
                 // 显示错误提示
-                const canvas = document.getElementById('radarChart');
-                if (canvas) {
-                    const container = canvas.parentElement;
-                    container.innerHTML = `
-                        <div class="text-center py-8">
-                            <p class="text-zinc-400 mb-4">图表渲染失败</p>
-                            <p class="text-zinc-500 text-sm">${error.message}</p>
-                        </div>
-                    `;
-                }
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-zinc-400 mb-4">图表渲染失败</p>
+                        <p class="text-zinc-500 text-sm">${error.message}</p>
+                    </div>
+                `;
             }
         }
 
