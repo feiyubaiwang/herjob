@@ -10,18 +10,39 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- 备用 CDN 源 -->
     <script>
-        window.addEventListener('load', function() {
+        // 立即尝试加载备用 CDN，而不是等待 window.load
+        if (typeof Chart === 'undefined') {
+            console.warn('主 CDN 加载失败，尝试备用 CDN...');
+            var script = document.createElement('script');
+            script.src = 'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js';
+            script.onload = function() {
+                console.log('备用 CDN 加载成功');
+            };
+            script.onerror = function() {
+                console.error('所有 CDN 加载失败');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <!-- 预加载 Chart.js 机制 -->
+    <script>
+        // 提前预加载 Chart.js，确保在测试完成前加载完成
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('开始预加载 Chart.js...');
+            // 如果 Chart.js 尚未加载，再次尝试加载
             if (typeof Chart === 'undefined') {
-                console.warn('主 CDN 加载失败，尝试备用 CDN...');
+                console.warn('Chart.js 尚未加载，再次尝试...');
                 var script = document.createElement('script');
-                script.src = 'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js';
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
                 script.onload = function() {
-                    console.log('备用 CDN 加载成功');
+                    console.log('Chart.js 预加载成功');
                 };
                 script.onerror = function() {
-                    console.error('所有 CDN 加载失败');
+                    console.error('Chart.js 预加载失败');
                 };
                 document.head.appendChild(script);
+            } else {
+                console.log('Chart.js 已加载');
             }
         });
     </script>
@@ -553,15 +574,27 @@
                 generateResults();
                 switchScreen(screenLoading, screenResult);
                 
+                // 立即显示图表加载状态
+                const canvas = document.getElementById('radarChart');
+                if (canvas) {
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                            <p class="text-zinc-400">图表加载中...</p>
+                        </div>
+                    `;
+                }
+                
                 // 修复 Bug：必须等待页面切换动画完成（500ms），容器 display 从 none 变成 block 后再渲染图表
                 // 否则 Chart.js 会由于 Canvas 父元素不可见，导致计算宽度为 0 从而引发渲染失败。
                 setTimeout(() => {
                     // 检查 Chart.js 是否已加载，如果没有则等待加载完成
                     if (typeof Chart === 'undefined') {
                         console.warn('Chart.js 尚未加载，等待加载完成...');
-                        // 最多等待 5 秒
+                        // 最多等待 3 秒（减少等待时间）
                         let attempts = 0;
-                        const maxAttempts = 50;
+                        const maxAttempts = 30;
                         const checkInterval = setInterval(() => {
                             attempts++;
                             if (typeof Chart !== 'undefined') {
@@ -577,9 +610,9 @@
                     } else {
                         renderChart();
                     }
-                }, 550);
+                }, 300); // 减少延迟时间
                 
-            }, 2500);
+            }, 2000); // 减少模拟计算延迟
         }
 
         function generateResults() {
@@ -641,6 +674,10 @@
             }
             
             try {
+                // 重新创建 Canvas 元素，确保干净的渲染环境
+                const container = document.getElementById('radarChart').parentElement;
+                container.innerHTML = '<canvas id="radarChart"></canvas>';
+                
                 const canvas = document.getElementById('radarChart');
                 if (!canvas) {
                     console.warn('Canvas 元素未找到');
@@ -648,7 +685,6 @@
                 }
                 
                 // 设置 Canvas 尺寸
-                const container = canvas.parentElement;
                 const containerWidth = container.clientWidth;
                 const containerHeight = Math.min(containerWidth * 0.8, 300); // 限制最大高度
                 
@@ -663,13 +699,17 @@
                     return;
                 }
                 
+                // 销毁旧的图表实例
                 if (radarChartInstance) {
                     radarChartInstance.destroy();
+                    radarChartInstance = null;
                 }
 
+                // 优化 Chart.js 配置，提高渲染速度
                 Chart.defaults.color = '#71717a'; // zinc-500
                 Chart.defaults.font.family = '"Noto Serif SC", serif';
 
+                // 使用更轻量级的配置
                 radarChartInstance = new Chart(ctx, {
                     type: 'radar',
                     data: {
@@ -684,20 +724,29 @@
                             pointHoverBackgroundColor: '#D93425',
                             pointHoverBorderColor: '#fff',
                             borderWidth: 2,
-                            pointRadius: 4,
-                            pointBorderWidth: 2
+                            pointRadius: 3, // 减小点的大小
+                            pointBorderWidth: 1 // 减小点边框的宽度
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: {
+                            duration: 500 // 减少动画时间
+                        },
                         scales: {
                             r: {
-                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                angleLines: { 
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    lineWidth: 1 // 减小线条宽度
+                                },
+                                grid: { 
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    lineWidth: 1 // 减小线条宽度
+                                },
                                 pointLabels: {
                                     color: '#e5e5e5',
-                                    font: { size: 12, weight: 'bold' }
+                                    font: { size: 11, weight: 'bold' } // 减小字体大小
                                 },
                                 ticks: {
                                     display: false, // 隐藏具体分数刻度，更显高级
@@ -714,7 +763,7 @@
                                 bodyColor: '#e5e5e5',
                                 borderColor: '#333',
                                 borderWidth: 1,
-                                padding: 10,
+                                padding: 8, // 减少内边距
                                 displayColors: false,
                                 callbacks: {
                                     label: function(context) {
